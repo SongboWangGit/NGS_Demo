@@ -444,7 +444,7 @@ def produceT(i, contentPool, seLen, inFile):
     contentPool.append(curRead)
 
 
-def StartMethod(inFile='../genome/chr20.txt', readsNum=3000000, seLen=150, outFile='../genome/readT1'):
+def StartMethod(inFile='../genome/chr20.txt', readsNum=5000, seLen=150, outFile='../genome/readTT'):
     startTime = datetime.datetime.now()
 
     outFile1 = outFile + '1.fastq'
