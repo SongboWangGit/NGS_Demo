@@ -28,3 +28,4 @@ if __name__ == '__main__':
 
     for line in file.readlines():
         print(len(line))
+        # hhhhhhhh
