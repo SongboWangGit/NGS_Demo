@@ -74,8 +74,8 @@ def WriteToFile(key, indexs, qual, READ):
     endIndex = indexs[len(indexs) - 1] + len(key) - 1
     # print(key, indexs[0], indexs[len(indexs) - 1] + len(key) - 1,  (qual[startIndex:endIndex]))
     if endIndex < 144 and startIndex >= 5:
-        outFile.write('(%s,%s)--' % (startIndex, endIndex))
-        outFile.write(str(qual[startIndex - 5:endIndex + 1 + 5]))
+        outFile.write('%s, %s, ' % (startIndex, endIndex))
+        outFile.write(str(qual[startIndex - 5:endIndex + 1 + 5])[1:-1])
         outFile.write('\n')
 
 
