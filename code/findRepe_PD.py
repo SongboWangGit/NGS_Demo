@@ -105,7 +105,7 @@ def saveRepePlot(qualSeries, repeDict, cnt, READ):
     plt.close()
 
 
-def CalAveQualByAll(READ):
+def CalAveQual(READ):
     rootdir = '../repe/repe%s_txt' % READ
     files = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
     for file in files:
@@ -113,33 +113,21 @@ def CalAveQualByAll(READ):
         path = os.path.join(rootdir, file)
         # 是文件而不是文件夹时
         if os.path.isfile(path):
-            # 打开文件
-            with open(path) as inputFile:
+            qualInfoDF = pd.DataFrame(pd.read_table(path, sep=',',
+                                       names=['s', 'e', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q']))
+            # 计算全部的平均
+            aveQual = qualInfoDF.iloc[:, 2:].mean().tolist()
+            SaveAveImg(file, aveQual, READ)
 
-                # 一个行作为初始值
-                line0 = inputFile.readline().strip().split('--')
-                sumQual = np.array(list(map(int, line0[1][1:-1].split(', '))))
-                cnt = 1
+            # 根据起始位置分段求平均
+            qualInfoDF['s'] = (qualInfoDF['s'] / 10).astype('int')
+            for i in range(15):
+                aveQual = qualInfoDF[qualInfoDF['s'] == i].iloc[:, 2:].mean().tolist()
+                SaveAveImg(file, aveQual, READ, i)
 
-                # 遍历其他行
-                for line in inputFile.readlines():
-                    cnt += 1
-                    lineSplit = line.strip().split('--')
-                    index = lineSplit[0]
 
-                    # str的list转化为int的list
-                    qual = list(map(int, lineSplit[1][1:-1].strip().split(', ')))
-                    if len(qual) < 20:
-                        continue
-                    # 逐个相加
-                    sumQual = qual + sumQual
 
-            # 计算平均
-            aveQual = sumQual / cnt
-            # 绘制图片并保存到文件
-            SaveAveImgByAll(file, aveQual, READ)
-
-def SaveAveImgByAll(file, aveQual, READ):
+def SaveAveImg(file, aveQual, READ, i=-1):
     fig = plt.figure(figsize=(13, 6.5))
     ax1 = fig.add_subplot(111)
     ax1.plot(aveQual, marker='*')
@@ -148,61 +136,13 @@ def SaveAveImgByAll(file, aveQual, READ):
     plt.vlines(len(aveQual) - 1 - 5, min(aveQual), max(aveQual), colors="r", linestyles="dashed")
     plt.xlabel('Repeated bps')
     plt.ylabel('Quality')
-    fig.savefig('../repe/repe%s_ave_img/%sall.jpg' % (READ, file.split('.')[0]))
+    if i == -1:
+        fig.savefig('../repe/repe%s_ave_img/%sall.jpg' % (READ, file.split('.')[0]))
+    else:
+        fig.savefig('../repe/repe%s_ave_img/%s%s.jpg' % (READ, file.split('.')[0], i))
+
     plt.cla()
     plt.close('all')
-
-
-def CalAveQualByFrag(READ):
-    rootdir = '../repe/repe%s_txt' % READ
-    files = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
-    for file in files:
-        # 计算文件全部路径
-        path = os.path.join(rootdir, file)
-        # 是文件而不是文件夹时
-        if os.path.isfile(path):
-            # 打开文件
-            with open(path) as inputFile:
-                sumQual = np.zeros((15, 20))
-                cnt = np.zeros((15, 1))
-
-                for line in inputFile.readlines():
-                    lineSplit = line.strip().split('--')
-                    index = lineSplit[0]
-
-                    # str的list转化为int的list
-                    qual = list(map(int, lineSplit[1][1:-1].strip().split(', ')))
-
-                    # 去除不合格数据
-                    if len(qual) < 20:
-                        continue
-
-                    # 找到起始坐标
-                    startIndex = index[1:-1].strip().split(',')[0]
-                    # 根据起始坐标找到在二维数组中的行标
-                    rowIndex = int(int(startIndex) / 10)
-
-                    # 计数相加
-                    cnt[rowIndex] += 1
-                    sumQual[rowIndex] = qual + sumQual[rowIndex]
-            aveQual = sumQual / cnt
-            SaveAveImgByFrag(file, aveQual, READ)
-
-
-def SaveAveImgByFrag(file, aveQual, READ):
-
-    for i in range(15):
-        fig = plt.figure(figsize=(13, 6.5))
-        ax1 = fig.add_subplot(111)
-        ax1.plot(aveQual[i], marker='*')
-
-        plt.vlines(4, min(aveQual[i]), max(aveQual[i]), colors="r", linestyles="dashed")
-        plt.vlines(len(aveQual[i]) - 1 - 5, min(aveQual[i]), max(aveQual[i]), colors="r", linestyles="dashed")
-        plt.xlabel('Repeated bps')
-        plt.ylabel('Quality')
-        fig.savefig('../repe/repe%s_ave_img/%s%s.jpg' % (READ, file.split('.')[0], i))
-        plt.cla()
-        plt.close('all')
 
 
 def JudgeRead1Or2(flag):
@@ -242,8 +182,8 @@ def FindRepeStart(READ, inputFile):
             # 获得bp串
             read = r.query_sequence
 
-            # 切除开头和结尾的部分碱基
-            readCut = read[STARTCUT:len(read) - ENDCUT]
+            # # 切除开头和结尾的部分碱基
+            # readCut = read[STARTCUT:len(read) - ENDCUT]
             # 获得数值质量
             qual = list(r.query_qualities)
             qualSeries = pd.Series(qual)
@@ -255,11 +195,11 @@ def FindRepeStart(READ, inputFile):
             # saveRepePlot(qualSeries, repeDict, cnt)
 
     bf.close()
-    CalAveQualByAll(READ)
-    CalAveQualByFrag(READ)
+    CalAveQual(READ)
 
 
 if __name__ == "__main__":
+
     # 使用多进程
     processPool = multiprocessing.Pool(3)
 
