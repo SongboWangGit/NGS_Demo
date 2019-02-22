@@ -11,7 +11,7 @@ import shutil
 import datetime
 
 
-def FindRepe(read, qual, STARTCUT, ENDCUT, READ):
+def FindRepe(read, qual, STARTCUT, ENDCUT, READ, repeNum):
     REPELEN = 1
     words = ['A', 'T', 'C', 'G']
     strLen = len(read)
@@ -64,13 +64,13 @@ def FindRepe(read, qual, STARTCUT, ENDCUT, READ):
         continueLists = repeDict[key]
         for indexs in continueLists:
             if len(indexs) == 10:
-                WriteToFile(key, indexs, qual, READ)
+                WriteToFile(key, indexs, qual, READ, repeNum)
 
     return repeDict
 
 
-def WriteToFile(key, indexs, qual, READ):
-    outFile = open("../repe/repe%s_txt/%s.txt" % (READ, key), 'a')
+def WriteToFile(key, indexs, qual, READ, repeNum):
+    outFile = open("../repe/repe_%s/repe%s_txt/%s.txt" % (repeNum, READ, key), 'a')
     startIndex = indexs[0]
     endIndex = indexs[len(indexs) - 1] + len(key) - 1
     # print(key, indexs[0], indexs[len(indexs) - 1] + len(key) - 1,  (qual[startIndex:endIndex]))
@@ -106,8 +106,9 @@ def saveRepePlot(qualSeries, repeDict, cnt, READ):
     plt.close()
 
 
-def CalAveQual(READ):
-    rootdir = '../repe/repe%s_txt' % READ
+def CalAveQual(READ, repeNum):
+
+    rootdir = '../repe/repe_%s/repe%s_txt' % (repeNum, READ)
     files = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
     for file in files:
         # 计算文件全部路径
@@ -118,17 +119,17 @@ def CalAveQual(READ):
                                        names=['s', 'e', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q']))
             # 计算全部的平均
             aveQual = qualInfoDF.iloc[:, 2:].mean().tolist()
-            SaveAveImg(file, aveQual, READ)
+            SaveAveImg(file, aveQual, READ, repeNum)
 
             # 根据起始位置分段求平均
             qualInfoDF['s'] = (qualInfoDF['s'] / 10).astype('int')
             for i in range(15):
                 aveQual = qualInfoDF[qualInfoDF['s'] == i].iloc[:, 2:].mean().tolist()
-                SaveAveImg(file, aveQual, READ, i)
+                SaveAveImg(file, aveQual, READ, repeNum, i)
 
 
 
-def SaveAveImg(file, aveQual, READ, i=-1):
+def SaveAveImg(file, aveQual, READ, repeNum, i=-1):
     fig = plt.figure(figsize=(13, 6.5))
     ax1 = fig.add_subplot(111)
     ax1.plot(aveQual, marker='*')
@@ -138,9 +139,9 @@ def SaveAveImg(file, aveQual, READ, i=-1):
     plt.xlabel('Repeated bps')
     plt.ylabel('Quality')
     if i == -1:
-        fig.savefig('../repe/repe%s_ave_img/%sall.jpg' % (READ, file.split('.')[0]))
+        fig.savefig('../repe/repe_%s/repe%s_ave_img/%sall.jpg' % (repeNum, READ, file.split('.')[0]))
     else:
-        fig.savefig('../repe/repe%s_ave_img/%s%s.jpg' % (READ, file.split('.')[0], i))
+        fig.savefig('../repe/repe_%s/repe%s_ave_img/%s%s.jpg' % (repeNum, READ, file.split('.')[0], i))
 
     plt.cla()
     plt.close('all')
@@ -162,7 +163,7 @@ def JudgeRead1Or2(flag):
         return 2
 
 
-def FindRepeStart(READ, inputFile):
+def FindRepeStart(READ, inputFile, repeNum):
     startTime = datetime.datetime.now()
     frontNum = 5
     STARTCUT = 0
@@ -171,11 +172,11 @@ def FindRepeStart(READ, inputFile):
     cnt = -1
 
     for r in bf:
-        if cnt % 1000000 == 0:
+        if cnt % 10000 == 0:
             print('Searching Read%s: %s' % (READ, cnt))
 
         cnt = cnt + 1
-        if cnt == 1000000:
+        if cnt == 100000:
             break
         rname = r.qname
         rflag = r.flag
@@ -192,7 +193,7 @@ def FindRepeStart(READ, inputFile):
             qualSeries = pd.Series(qual)
 
             # 找到重复区域的index
-            repeDict = FindRepe(read, qual, STARTCUT, ENDCUT, READ)
+            repeDict = FindRepe(read, qual, STARTCUT, ENDCUT, READ, repeNum)
 
             # 保存图像
             # saveRepePlot(qualSeries, repeDict, cnt)
@@ -200,7 +201,7 @@ def FindRepeStart(READ, inputFile):
     bf.close()
     endTime = datetime.datetime.now()
     print("Time: ", (endTime - startTime).seconds)
-    CalAveQual(READ)
+    CalAveQual(READ, repeNum)
 
 
 if __name__ == "__main__":
@@ -208,22 +209,18 @@ if __name__ == "__main__":
     # 使用多进程
     processPool = multiprocessing.Pool(3)
 
-    # 删除并创建结果文件夹
-    if os.path.exists('../repe'):
-        shutil.rmtree('../repe')
-    os.makedirs('../repe')
-    os.makedirs('../repe/repe1_ave_img')
-    os.makedirs('../repe/repe2_ave_img')
-    os.makedirs('../repe/repe1_txt')
-    os.makedirs('../repe/repe2_txt')
+    if not os.path.exists('../repe'):
+        os.makedirs('../repe')
+
+    repeNum = 8
+    inputFile = '../bams/sampleChr20_sorted.bam'
 
     if len(sys.argv) == 1:
-        for READ in [1, 2]:
-            processPool.apply_async(FindRepeStart, args=(READ, '../bams/sampleChr20_sorted.bam'))
+        repeNum = 10
+        inputFile = '../bams/sampleChr20_sorted.bam'
     else:
-        inputFile = ''
         try:
-            opts, args = getopt.getopt(sys.argv[1:], "hi:")
+            opts, args = getopt.getopt(sys.argv[1:], "hi:n:")
         except getopt.GetoptError:
             print('findRepe.py -i <inputfile>')
             sys.exit(2)
@@ -233,8 +230,21 @@ if __name__ == "__main__":
                 sys.exit()
             elif opt in ("-i"):
                 inputFile = arg
-        for READ in [1, 2]:
-            processPool.apply_async(FindRepeStart, args=(READ, inputFile))
+            elif opt in ("-n"):
+                repeNum = arg
+
+    # 删除并创建结果文件夹
+    if os.path.exists('../repe/repe_%s' % repeNum):
+        shutil.rmtree('../repe/repe_%s' % repeNum)
+    os.makedirs('../repe/repe_%s' % repeNum)
+
+    os.makedirs('../repe/repe_%s/repe1_ave_img' % repeNum)
+    os.makedirs('../repe/repe_%s/repe2_ave_img' % repeNum)
+    os.makedirs('../repe/repe_%s/repe1_txt' % repeNum)
+    os.makedirs('../repe/repe_%s/repe2_txt' % repeNum)
+
+    for READ in [1, 2]:
+        processPool.apply_async(FindRepeStart, args=(READ, inputFile, repeNum))
 
     processPool.close()
     processPool.join()
