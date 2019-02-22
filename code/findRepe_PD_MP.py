@@ -8,6 +8,7 @@ import sys
 import getopt
 import multiprocessing
 import shutil
+import datetime
 
 
 def FindRepe(read, qual, STARTCUT, ENDCUT, READ):
@@ -162,6 +163,7 @@ def JudgeRead1Or2(flag):
 
 
 def FindRepeStart(READ, inputFile):
+    startTime = datetime.datetime.now()
     frontNum = 5
     STARTCUT = 0
     ENDCUT = 0
@@ -173,7 +175,8 @@ def FindRepeStart(READ, inputFile):
             print('Searching Read%s: %s' % (READ, cnt))
 
         cnt = cnt + 1
-
+        if cnt == 1000000:
+            break
         rname = r.qname
         rflag = r.flag
 
@@ -195,6 +198,8 @@ def FindRepeStart(READ, inputFile):
             # saveRepePlot(qualSeries, repeDict, cnt)
 
     bf.close()
+    endTime = datetime.datetime.now()
+    print("Time: ", (endTime - startTime).seconds)
     CalAveQual(READ)
 
 
