@@ -63,7 +63,7 @@ def FindRepe(read, qual, STARTCUT, ENDCUT, READ, repeNum):
     for key in repeDict.keys():
         continueLists = repeDict[key]
         for indexs in continueLists:
-            if len(indexs) == 10:
+            if len(indexs) == int(repeNum):
                 WriteToFile(key, indexs, qual, READ, repeNum)
 
     return repeDict
@@ -110,13 +110,20 @@ def CalAveQual(READ, repeNum):
 
     rootdir = '../repe/repe_%s/repe%s_txt' % (repeNum, READ)
     files = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
+
     for file in files:
         # 计算文件全部路径
         path = os.path.join(rootdir, file)
         # 是文件而不是文件夹时
         if os.path.isfile(path):
+
+            names = ['s', 'e']
+            for i in range(int(repeNum) + 5 + 5):
+                names.append('q')
+
             qualInfoDF = pd.DataFrame(pd.read_table(path, sep=',',
-                                       names=['s', 'e', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q', 'q']))
+                                           names=names))
+
             # 计算全部的平均
             aveQual = qualInfoDF.iloc[:, 2:].mean().tolist()
             SaveAveImg(file, aveQual, READ, repeNum)
