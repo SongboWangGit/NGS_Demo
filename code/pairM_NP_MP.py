@@ -71,7 +71,7 @@ def SaveAsDict(path):
     # 字典的本地存储
     dict = open('../genome/chr20_dict.txt', 'w')
     dict.write(str(sequences))
-    return (sequences['chr20'])
+    return sequences['chr20']
 
 def FetchFastqc(path1, path2=''):
 

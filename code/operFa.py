@@ -1,30 +1,24 @@
 
-
-def SaveAsDict(path):
+def SaveAsFile(path):
 
     f = open(path, 'r')
 
     cnt = 0
-    sequences = {}
+    sequences = ''
+    outFile = open('operFa.py', 'r')
     # 遍历fa文件，存储到字典中
     for line in f:
-        # cnt += 1
-        # print(cnt)
-        # if cnt == 100:
-        #     break
-        if line.startswith('>'):
+        if line.startswith(">"):
+            outFile.close()
             name = line.replace('>', '').split()[0]
-            sequences[name] = ''
+            outFile = open('../ref/%s_list.txt' % name, 'w')
         else:
-            sequences[name] += line.replace('\n', '').strip()
+            outFile.write(str(line.replace('\n', '').strip()))
+            # cnt = cnt + 1
 
-    # 字典的本地存储
-    dict = open('../genome/chr20_dict.txt', 'w')
-    dict.write(str(sequences))
-    return sequences['chr20']
 
 if __name__ == '__main__':
 
     refFile = '/home/sbwang/user/workspace/genone/REF/GRCh38.d1.vd1.fa'
 
-    SaveAsDict(refFile)
+    SaveAsFile(refFile)
